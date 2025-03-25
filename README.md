@@ -1,5 +1,19 @@
 # Semantic Book Recommender
 
+- [Semantic Book Recommender](#semantic-book-recommender)
+  - [Introduction](#introduction)
+  - [Project Workflow](#project-workflow)
+  - [Required Files and Folders](#required-files-and-folders)
+  - [Deployment Guide](#deployment-guide)
+    - [Python Environment Setup](#python-environment-setup)
+    - [Running the Application](#running-the-application)
+  - [File Explanations](#file-explanations)
+    - [1. Data Exploration (`data-exploration.ipynb`)](#1-data-exploration-data-explorationipynb)
+    - [2. Vector Search (`vector-search.ipynb`)](#2-vector-search-vector-searchipynb)
+    - [3. Text Classification (`text-classification.ipynb`)](#3-text-classification-text-classificationipynb)
+    - [4. Sentiment Analysis (`sentiment_analysis.ipynb`)](#4-sentiment-analysis-sentiment_analysisipynb)
+    - [5. Gradio Dashboard (`gradio-dashboard.py`)](#5-gradio-dashboard-gradio-dashboardpy)
+
 ## Introduction
 
 Semantic Book Recommender is a machine learning-powered application designed to provide personalized book recommendations. By leveraging advanced natural language processing techniques, the system analyzes book descriptions, tags, and user sentiment to deliver tailored suggestions. The project integrates multiple workflows, including data preprocessing, vector search, text classification, and sentiment analysis, culminating in an interactive Gradio-based dashboard for end-users.
