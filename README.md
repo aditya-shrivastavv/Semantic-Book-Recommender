@@ -87,6 +87,8 @@ This project is ideal for exploring the intersection of AI, semantic search, and
 
 ### 1. Data Exploration (`data-exploration.ipynb`)
 
+> ***Objective***: Explore and clean the book dataset (`books_with_categories.csv`) — analyze categories, descriptions, and other features to prepare data for sentiment analysis and recommendation modeling. Includes visualizations, statistics, and preprocessing steps for better downstream performance.
+
 1. Downloading and saving the database from Kaggle using `kagglehub` library.
 2. Converting the database to a DataFrame and exploring the data.
 3. **Handling missing data**
@@ -99,6 +101,8 @@ This project is ideal for exploring the intersection of AI, semantic search, and
 8. Finally, we are saving the cleaned data to a new CSV file.
 
 ### 2. Vector Search (`vector-search.ipynb`)
+
+> ***Objective***: Build a semantic vector search system using book descriptions. It converts text into embeddings with Google Generative AI, stores them in a Chroma vector database, and supports similarity-based retrieval to find books that match user queries.
 
 1. Importing essential modules from `langchain`, `dotenv`, and `pandas` to handle text processing, embeddings, and environment variables.
 2. Loading Environment Variables: `load_dotenv()` loads the API key (e.g., Google Generative AI key) from the `.env` file to ensure sensitive data isn’t hardcoded in the script.
@@ -127,6 +131,110 @@ This project is ideal for exploring the intersection of AI, semantic search, and
 
 ### 3. Text Classification (`text-classification.ipynb`)
 
+> ***Objective***: Perform sentiment and emotion analysis on book descriptions using a transformer-based model (`j-hartmann/emotion-english-distilroberta-base`). Extract dominant emotions like joy, sadness, fear, etc., to enrich book data with emotional scores for personalized recommendations.
+
+1. **Loading the Cleaned Dataset**
+   1. The cleaned book data (`books_cleaned.csv`) is imported using `pandas`.
+   2. Initial category counts are displayed with `value_counts()` to understand the distribution of genres.
+2. **Defining a Category Mapping**
+   1. A dictionary (`category_mapping`) is created to merge multiple genres into broader, simpler categories — like converting `"Juvenile Fiction"` to `"Children’s Fiction"` and `"History"` to `"Nonfiction"`.
+   2. A new column `simple_categories` is created by applying this mapping to the `categories` column.
+   3. Rows with undefined categories (`NaN`) are filtered out for now.
+   4. ✅ Result: Books now have cleaner, more manageable categories.
+3. **Setting Up the Classification Model**
+   1. The `transformers` library is used to load a zero-shot classification pipeline (`facebook/bart-large-mnli`).
+   2. This allows us to classify descriptions into categories without needing a predefined training dataset.
+4. **Testing the Model with a Sample Description**
+   1. A random book from the `"Fiction"` category is picked, and the model predicts whether it’s `"Fiction"` or `"Nonfiction"`.
+   2. The model outputs a list of scores per category, and the highest score determines the predicted category.
+5. **Defining the Prediction Function**
+   1. A function `generate_predictions()` is created to:
+      1. Take a book description (`sequence`) and a list of possible categories.
+      2. Pass the description through the model’s pipeline.
+      3. Return the category with the highest confidence score.
+   2. ✅ Result: Reusable function to classify any book’s description.
+6. **Evaluating Model Accuracy**
+   1. To measure the model's performance:
+      1. 300 Fiction books and 300 Nonfiction books are classified.
+      2. Actual and predicted categories are saved into `actual_cats` and `predicted_cats` lists.
+   2. A DataFrame (`predictions_df`) compares the actual vs. predicted categories.
+   3. It calculates how many predictions are correct using `np.where()`, outputting the accuracy percentage.
+   4. ✅ Goal: Ensure the model performs well before handling missing categories.
+7. **Handling Missing Categories**
+   1. Books with missing `simple_categories` are identified and extracted into a `missing_cats` DataFrame (containing `isbn13` and `description`).
+   2. Each missing book description is classified using the `generate_predictions()` function, and predictions are stored with corresponding ISBNs.
+8. **Merging Predicted Categories Back to the Dataset**
+   1. The predicted categories are merged back into the main `books` DataFrame based on `isbn13`.
+   2. Missing categories are replaced with the new predictions.
+   3. The temporary predicted_categories column is dropped after merging.
+   4. ✅ Result: Every book now has a `simple_category` — no more missing data!
+9. **Saving the Final Dataset**
+   1. The final dataset, now enriched with consistent categories, is saved to `books_with_categories.csv` for further analysis.
+
 ### 4. Sentiment Analysis (`sentiment_analysis.ipynb`)
 
+> ***Objective***: Analyze book descriptions to detect emotional tones (`joy`, `sadness`, `fear`, etc.) using a pre-trained Hugging Face emotion classifier, then save results as a new CSV (`books_with_emotions.csv`) for further recommendation analysis.
+
+1. **Loading the Enhanced Dataset**
+   1. The dataset from the previous step (`books_with_categories.csv`) is imported using `pandas`.
+   2. Each book now has a `simple_category` — and this file adds emotional analysis.
+2. **Setting Up the Sentiment Model**
+   1. The `transformers` library loads an emotion classification model (`j-hartmann/emotion-english-distilroberta-base`).
+   2. This model supports 7 emotions (anger, disgust, fear, joy, sadness, surprise, neutral) and outputs scores for each.
+   3. Initial tests run on a simple string ("I love this!") and the first book’s description — split into sentences for granular analysis.
+   4. ✅ Result: The model works and returns detailed emotion probabilities.
+3. **Defining Emotion Scoring Logic**
+   1. `calculate_max_emotion_scores()` is created to:
+      1. Take model predictions (per sentence).
+      2. Extract scores for each of the 7 emotions.
+      3. Return the maximum score per emotion (i.e., the strongest emotional presence across all sentences).
+   2. ✅ Goal: Capture the most intense expression of each emotion per book.
+4. **Processing All Books**
+   1. The script loops over all book descriptions (`tqdm` adds a progress bar).
+   2. Each description is split into sentences and passed through the model.
+   3. The max scores per emotion are calculated and stored into a new DataFrame (`emotions_df`), alongside each book’s ISBN.
+   4. ✅ Result: Each book now has a comprehensive emotional fingerprint.
+5. **Merging Emotions into the Main Dataset**
+   1. The `emotions_df` DataFrame is merged into the main `books` DataFrame using `isbn13` as the key.
+   2. The result is a book dataset enriched with emotional data.
+6. **Saving the Final Dataset**
+   1. The fully enriched dataset is saved as `books_with_emotions.csv` — now complete with categories and emotional analysis.
+   2. ✅ Final Output: Books now have:
+      1. Simplified Categories (Fiction, Nonfiction)
+      2. Emotion Scores (joy, fear, neutral, etc.)
+
 ### 5. Gradio Dashboard (`gradio-dashboard.py`)
+
+> ***Objective***: Build an interactive book recommendation dashboard using Gradio. It leverages semantic search (powered by embeddings) and emotion-based filtering to recommend books based on user input, preferred categories, and emotional tones like joy, sadness, or suspense.
+
+1. **Data Setup**
+   - `books_with_emotions.csv` is loaded.
+   - Adds large_thumbnail images — falling back to a placeholder if unavailable.
+   - ✅ Nice touch: Ensures consistent image sizes with `&fife=w800`.
+2. **Text Embeddings & Vector Database**
+   - Uses `langchain` with Google Generative AI embeddings (`models/embedding-001`) for semantic search.
+   - `Chroma` handles the vector database.
+   - Supports persistent storage — skips re-embedding if the DB already exists (`chroma_db_books_vector_database`).
+   - ✅ Efficiency boost: Faster reloads without retraining embeddings!
+3. **Semantic Recommendations**
+   - `retrieve_semantic_recommendations()` finds similar books.
+   - Filters by category (optional).
+   - Sorts by tone — prioritizes emotions (joy, fear, sadness, etc.).
+   - ✅ Clever move: Sorting by emotional tone creates personalized results!
+4. **Result Formatting**
+   - `recommend_books()`:
+     - Truncates long descriptions to 30 words.
+     - Cleans up author names (e.g., "John, Jane, and Jack").
+     - Outputs formatted gallery cards (cover + caption).
+     - ✅ Polished UX: Shortened descriptions + clean author formatting keeps it readable.
+5. **Gradio Dashboard**
+   - Uses Gradio Blocks (with theme=gr.themes.Citrus()).
+   - Includes:
+     - Query Input
+     - Category Dropdown
+     - Tone Selector
+     - Submit Button
+     - Gallery Output (8 columns, 2 rows)
+   - ✅ Looks professional: Modern, clean layout with citrus-themed Gradio blocks.
+6. **Final Launch Setup**
+   - `dashboard.launch()` on 0.0.0.0:7860 (ready for local or Docker deployment).
